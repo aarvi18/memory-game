@@ -77,12 +77,14 @@ const MemoryGame: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+        <>
             <Scoreboard score={score} highestScore={highestScore} />
-            <h2 className="text-lg font-semibold mt-4">Level {level + 1}</h2>
-            <GameBoard tiles={tiles} onTileClick={handleTileClick} gridSize={gridSize} />
-            {matchedPairs === (gridSize[0] * gridSize[1]) / 2 && <p className="mt-4 text-xl">🎉 Level Complete! 🎉</p>}
-        </div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+                <h2 className="text-lg font-semibold mt-4">Level {level + 1}</h2>
+                <GameBoard tiles={tiles} onTileClick={handleTileClick} gridSize={gridSize} />
+                {matchedPairs === (gridSize[0] * gridSize[1]) / 2 && <p className="mt-4 text-xl">🎉 Level Complete! 🎉</p>}
+            </div>
+        </>
     );
 };
 
