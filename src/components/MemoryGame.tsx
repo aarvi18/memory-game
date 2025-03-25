@@ -1,24 +1,39 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import Scoreboard from "./Scoreboard";
+import GameBoard from "./GameBoard";
 
-const emojis = ["🍎", "🍌", "🍇", "🍉", "🍒", "🍍", "🥝", "🍑", "🍏", "🍊", "🥥", "🍈", "🍋", "🍓", "🫐", "🥭"];
-const gridSize = 4; // Change to 2, 4, 6, etc.
-const totalTiles = gridSize * gridSize;
-
-// Shuffle function
-const shuffleArray = (array: string | any[]) => {
-    const selectedEmojis = array.slice(0, totalTiles / 2);
-    const shuffledTiles = [...selectedEmojis, ...selectedEmojis]
-        .sort(() => Math.random() - 0.5)
-        .map((emoji, index) => ({ id: index, emoji, flipped: false, matched: false }));
-    return shuffledTiles;
+type Tile = {
+    id: number;
+    emoji: string;
+    flipped: boolean;
+    matched: boolean;
 };
 
-const MemoryGame = () => {
-    const [tiles, setTiles] = useState(() => shuffleArray(emojis));
+const emojis: string[] = ["🍎", "🍌", "🍇", "🍉", "🍒", "🍍", "🥝", "🍑", "🍏", "🍊", "🥥", "🍈", "🍋", "🍓", "🫐", "🥭"];
+const levels: [number, number][] = [
+    [2, 2],
+    [3, 4],
+    [4, 4],
+    [4, 5],
+    [8, 5]
+];
+
+const shuffleArray = (array: string[], rows: number, cols: number): Tile[] => {
+    const totalTiles = rows * cols;
+    const selectedEmojis = array.slice(0, totalTiles / 2);
+    return [...selectedEmojis, ...selectedEmojis]
+        .sort(() => Math.random() - 0.5)
+        .map((emoji, index) => ({ id: index, emoji, flipped: false, matched: false }));
+};
+
+const MemoryGame: React.FC = () => {
+    const [level, setLevel] = useState<number>(0);
+    const [gridSize, setGridSize] = useState<[number, number]>(levels[level]);
+    const [tiles, setTiles] = useState<Tile[]>(() => shuffleArray(emojis, gridSize[0], gridSize[1]));
     const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
-    const [matchedPairs, setMatchedPairs] = useState(0);
-    const [score, setScore] = useState(0);
+    const [matchedPairs, setMatchedPairs] = useState<number>(0);
+    const [score, setScore] = useState<number>(0);
+    const [highestScore, setHighestScore] = useState<number>(() => parseInt(localStorage.getItem("highestScore") || "0"));
 
     useEffect(() => {
         if (selectedTiles.length === 2) {
@@ -37,7 +52,25 @@ const MemoryGame = () => {
         }
     }, [selectedTiles, tiles]);
 
-    const handleTileClick = (index: number) => {
+    useEffect(() => {
+        if (matchedPairs === (gridSize[0] * gridSize[1]) / 2) {
+            if (score > highestScore) {
+                setHighestScore(score);
+                localStorage.setItem("highestScore", score.toString());
+            }
+            setTimeout(() => {
+                if (level < levels.length - 1) {
+                    const nextLevel = level + 1;
+                    setLevel(nextLevel);
+                    setGridSize(levels[nextLevel]);
+                    setTiles(shuffleArray(emojis, levels[nextLevel][0], levels[nextLevel][1]));
+                    setMatchedPairs(0);
+                }
+            }, 1000);
+        }
+    }, [matchedPairs, score, level, highestScore]);
+
+    const handleTileClick = (index: number): void => {
         if (tiles[index].flipped || tiles[index].matched || selectedTiles.length === 2) return;
         setTiles(prev => prev.map(tile => tile.id === index ? { ...tile, flipped: true } : tile));
         setSelectedTiles([...selectedTiles, index]);
@@ -45,30 +78,10 @@ const MemoryGame = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-            <div className="w-full flex justify-between items-center px-6">
-                <h1 className="text-3xl font-bold">Memory Game</h1>
-                <p className="text-xl font-bold">Score: {score}</p>
-            </div>
-            <div className={`grid grid-cols-${gridSize} gap-4 mt-6`}
-                 style={{ gridTemplateRows: `repeat(${gridSize}, 1fr)`, gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
-                {tiles.map((tile, index) => (
-                    <motion.div
-                        key={tile.id}
-                        className="w-20 h-20 flex items-center justify-center bg-gray-700 rounded-xl shadow-lg cursor-pointer"
-                        onClick={() => handleTileClick(index)}
-                        whileTap={{ scale: 0.9 }}
-                    >
-                        {tile.flipped || tile.matched ? (
-                            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-3xl">
-                                {tile.emoji}
-                            </motion.span>
-                        ) : (
-                            <motion.div className="w-full h-full bg-gray-800 rounded-xl"></motion.div>
-                        )}
-                    </motion.div>
-                ))}
-            </div>
-            {matchedPairs === totalTiles / 2 && <p className="mt-4 text-xl">🎉 You Won! 🎉</p>}
+            <Scoreboard score={score} highestScore={highestScore} />
+            <h2 className="text-lg font-semibold mt-4">Level {level + 1}</h2>
+            <GameBoard tiles={tiles} onTileClick={handleTileClick} gridSize={gridSize} />
+            {matchedPairs === (gridSize[0] * gridSize[1]) / 2 && <p className="mt-4 text-xl">🎉 Level Complete! 🎉</p>}
         </div>
     );
 };
