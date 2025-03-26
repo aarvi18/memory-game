@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Scoreboard from "./Scoreboard";
 import GameBoard from "./GameBoard";
 
@@ -9,14 +9,16 @@ type Tile = {
     matched: boolean;
 };
 
-const emojis: string[] = ["🍎", "🍌", "🍇", "🍉", "🍒", "🍍", "🥝", "🍑", "🍏", "🍊", "🥥", "🍈", "🍋", "🍓", "🫐", "🥭"];
-const levels: [number, number][] = [
-    [2, 2],
-    [3, 4],
-    [4, 4],
-    [4, 5],
-    [8, 5]
-];
+const emojis: string[] = ["🍎", "🍌", "🍇", "🍉", "🍒", "🍍", "🥝", "🍑", "🍏", "🍊", "🥥", "🍈", "🍋", "🍓", "🫐", "🥭", "🍔", "🍕", "🌮", "🍩", "🍪", "🎂", "🍫", "🍗", "🍖", "🍞", "🥗", "🍜", "🍛", "🥨", "🥪"];
+
+// Generate level configurations dynamically from [2,2] up to [15,4]
+const generateLevels = (): [number, number][] => {
+    const levels: [number, number][] = [[2,2]];
+    for (let i = 3; i <= 15; i++) {
+        levels.push([i, 4]);
+    }
+    return levels;
+};
 
 const shuffleArray = (array: string[], rows: number, cols: number): Tile[] => {
     const totalTiles = rows * cols;
@@ -27,6 +29,7 @@ const shuffleArray = (array: string[], rows: number, cols: number): Tile[] => {
 };
 
 const MemoryGame: React.FC = () => {
+    const levels = useMemo(generateLevels, []);
     const [level, setLevel] = useState<number>(0);
     const [gridSize, setGridSize] = useState<[number, number]>(levels[level]);
     const [tiles, setTiles] = useState<Tile[]>(() => shuffleArray(emojis, gridSize[0], gridSize[1]));
@@ -68,7 +71,7 @@ const MemoryGame: React.FC = () => {
                 }
             }, 1000);
         }
-    }, [matchedPairs, score, level, highestScore]);
+    }, [matchedPairs, score, level, highestScore, levels]);
 
     const handleTileClick = (index: number): void => {
         if (tiles[index].flipped || tiles[index].matched || selectedTiles.length === 2) return;
